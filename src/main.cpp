@@ -17,8 +17,10 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 
 #define SwitchDigital 7
 bool doorClosed;
-float val; // digital input, low when door is closed
-bool boolSDConnected = false;
+float val; // digital input, high when door is closed
+//bool boolSDConnected = false; how to check that SD is connected? Workaround: write after interval in SD-card
+//int32_t activityInterval = 3600000; //hour in ms
+int lastHour = 0;
 
 void writeDate(void){
   DateTime now = rtc.now();
@@ -60,39 +62,32 @@ void printDate(void){
 
 
 void writeStart(void){
-  myFile = SD.open("test.txt", FILE_WRITE);
+  myFile = SD.open("test2.txt", FILE_WRITE);
   if (myFile) {
     writeDate();
     myFile.println("Device was started");
     myFile.close();
     Serial.println("done.");
   }
-
+  else{
+    Serial.println("writeStart was not possible!");
+  }
+  myFile.close();
 
 }
 
 
 void writeData(void){
 
-  if(!boolSDConnected){
-    if (!SD.begin(SDchipSelect)) {
-      Serial.println("reinitialization failed!");
-      return;
-    }
-    else{
-      Serial.println("SD is connected again");
-      boolSDConnected = true;
-      return;
-    }
-  }
 
-  myFile = SD.open("test.txt", FILE_WRITE);
+  myFile = SD.open("test2.txt", FILE_WRITE);
+  /*
   if (myFile) {
     if(!boolSDConnected){
       Serial.println("SD is connected now first time!");
       boolSDConnected = true;
     }
-
+*/
     writeDate();
     if(doorClosed){
       myFile.println("door was closed, now open");
@@ -105,11 +100,13 @@ void writeData(void){
     myFile.close();
     Serial.println("done.");
   }
+  /*
   else{
     Serial.println("No SD connected");
     boolSDConnected = false;
   }
-}
+  */
+//}
 
 
 // checks if door is/was open/closed. if state changed, it uses function to write data 
@@ -131,21 +128,28 @@ void handleDoorState(void){
   digitalWrite(LED_BUILTIN, val); 
 }
 
-void checkSDconnected(void){
-  myFile = SD.open("test.txt");
+void writeHourlyState(void){
+  myFile = SD.open("test2.txt", FILE_WRITE);
   if (myFile) {
-  Serial.println("No SD is there!");
-  return;
-}
-else{
-  Serial.println("SD is connected");
-  boolSDConnected = true;
+    writeDate();
+    myFile.println(",,Device is active.");
+    myFile.close();
+    Serial.println("Device still active after 1 hour.");
   }
-  if (!boolSDConnected){
-    Serial.println("No SD Connected");
+  else{
+    Serial.println("writeState was not possible!");
   }
   myFile.close();
-  return;
+
+}
+
+void checkHourlyState(void){
+  int currentHour = rtc.now().hour();
+  if(currentHour!= lastHour){
+    writeHourlyState();
+    lastHour = currentHour;
+  }
+
 }
 
 
@@ -161,10 +165,8 @@ void setup() {
     Serial.println("Couldn't find RTC");
     while (1);
   }
-  if (! rtc.isrunning()) {
-    Serial.println("RTC is NOT running!");
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  }
+  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); #use this if you want to sync time with pc
+
 
   Serial.print("Initializing SD card...");
   pinMode(SS, OUTPUT);
@@ -174,16 +176,17 @@ void setup() {
   }
   else{
     Serial.println("SD is connected");
-    boolSDConnected = true;
-    return;
+    //boolSDConnected = true;
   }
-  Serial.println("initialization done.");
   writeStart();
   printDate();
+  Serial.println("initialization done.");
+
 }
 
 // the loop function runs over and over again forever
 void loop() {
+  checkHourlyState();
   Serial.println("new cycle");
   val = digitalRead(SwitchDigital);
   handleDoorState();
