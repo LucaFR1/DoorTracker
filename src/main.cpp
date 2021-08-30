@@ -18,6 +18,7 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 #define SwitchDigital 7
 bool doorClosed;
 float val; // digital input, low when door is closed
+bool boolSDConnected = false;
 
 void writeDate(void){
   DateTime now = rtc.now();
@@ -38,6 +39,25 @@ void writeDate(void){
   myFile.print(",");
 }
 
+void printDate(void){
+  DateTime now = rtc.now();
+
+  Serial.print(now.year(), DEC);
+  Serial.print('/');
+  Serial.print(now.month(), DEC);
+  Serial.print('/');
+  Serial.print(now.day(), DEC);
+  Serial.print(" (");
+  Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+  Serial.print(") ");
+  Serial.print(now.hour(), DEC);
+  Serial.print(':');
+  Serial.print(now.minute(), DEC);
+  Serial.print(':');
+  Serial.print(now.second(), DEC);
+  Serial.print(",");
+}
+
 
 void writeStart(void){
   myFile = SD.open("test.txt", FILE_WRITE);
@@ -53,8 +73,26 @@ void writeStart(void){
 
 
 void writeData(void){
+
+  if(!boolSDConnected){
+    if (!SD.begin(SDchipSelect)) {
+      Serial.println("reinitialization failed!");
+      return;
+    }
+    else{
+      Serial.println("SD is connected again");
+      boolSDConnected = true;
+      return;
+    }
+  }
+
   myFile = SD.open("test.txt", FILE_WRITE);
   if (myFile) {
+    if(!boolSDConnected){
+      Serial.println("SD is connected now first time!");
+      boolSDConnected = true;
+    }
+
     writeDate();
     if(doorClosed){
       myFile.println("door was closed, now open");
@@ -66,6 +104,10 @@ void writeData(void){
     }
     myFile.close();
     Serial.println("done.");
+  }
+  else{
+    Serial.println("No SD connected");
+    boolSDConnected = false;
   }
 }
 
@@ -87,6 +129,23 @@ void handleDoorState(void){
     }
   }
   digitalWrite(LED_BUILTIN, val); 
+}
+
+void checkSDconnected(void){
+  myFile = SD.open("test.txt");
+  if (myFile) {
+  Serial.println("No SD is there!");
+  return;
+}
+else{
+  Serial.println("SD is connected");
+  boolSDConnected = true;
+  }
+  if (!boolSDConnected){
+    Serial.println("No SD Connected");
+  }
+  myFile.close();
+  return;
 }
 
 
@@ -113,18 +172,20 @@ void setup() {
     Serial.println("initialization failed!");
     return;
   }
+  else{
+    Serial.println("SD is connected");
+    boolSDConnected = true;
+    return;
+  }
   Serial.println("initialization done.");
-
   writeStart();
-
-
-
+  printDate();
 }
 
 // the loop function runs over and over again forever
 void loop() {
-
+  Serial.println("new cycle");
   val = digitalRead(SwitchDigital);
   handleDoorState();
-  delay(200); 
+  delay(500); 
 }
