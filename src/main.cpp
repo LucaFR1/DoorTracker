@@ -17,12 +17,25 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 
 #define SwitchDigital 7
 bool doorClosed;
-float val; // digital input, high when door is closed
-//bool boolSDConnected = false; how to check that SD is connected? Workaround: write after interval in SD-card
-//int32_t activityInterval = 3600000; //hour in ms
+float val; // digital input, high when door is open
 int lastHour = 0;
 
 void writeDate(void){
+  DateTime now = rtc.now();
+  char dateBuffer[12];
+
+  sprintf(dateBuffer,"%02u-%02u-%04u ",now.day(),now.month(),now.year());
+  myFile.print(dateBuffer);
+
+  sprintf(dateBuffer,"%02u:%02u:%02u ",now.hour(),now.minute(),now.second());
+  myFile.print(dateBuffer);
+  myFile.print(" (");
+  myFile.print(daysOfTheWeek[now.dayOfTheWeek()]);
+  myFile.print(") ");
+  myFile.print(",");
+}
+
+void writeDateOld(void){
   DateTime now = rtc.now();
 
   myFile.print(now.year(), DEC);
@@ -45,10 +58,15 @@ void printDate(void){
   char dateBuffer[12];
 
   sprintf(dateBuffer,"%02u-%02u-%04u ",now.day(),now.month(),now.year());
-  myFile.print(dateBuffer);
+  Serial.print(dateBuffer);
 
   sprintf(dateBuffer,"%02u:%02u:%02u ",now.hour(),now.minute(),now.second());
-  myFile.println(dateBuffer);
+  Serial.print(dateBuffer);
+  Serial.print(" (");
+  Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+  Serial.print(") ");
+  Serial.print(",");
+
 }
 
 void printDateOld(void){
@@ -77,7 +95,7 @@ void writeStart(void){
     writeDate();
     myFile.println("Device was started");
     myFile.close();
-    Serial.println("done.");
+    Serial.println("write Start done.");
   }
   else{
     Serial.println("writeStart was not possible!");
@@ -88,40 +106,25 @@ void writeStart(void){
 
 
 void writeData(void){
-
-
   myFile = SD.open("test2.txt", FILE_WRITE);
-  /*
-  if (myFile) {
-    if(!boolSDConnected){
-      Serial.println("SD is connected now first time!");
-      boolSDConnected = true;
-    }
-*/
-    writeDate();
-    if(doorClosed){
-      myFile.println("door was closed, now open");
-      Serial.println("door was closed, now open");
-        }
-    else{
-      myFile.println("door was open, now closed");
-      Serial.println("door was open, now closed");
-    }
-    myFile.close();
-    Serial.println("done.");
-  }
-  /*
+  writeDate();
+  if(doorClosed){
+    myFile.println("door was closed, now open");
+    Serial.println("door was closed, now open");
+      }
   else{
-    Serial.println("No SD connected");
-    boolSDConnected = false;
+    myFile.println("door was open, now closed");
+    Serial.println("door was open, now closed");
   }
-  */
-//}
+  myFile.close();
+  Serial.println("done.");
+}
+
 
 
 // checks if door is/was open/closed. if state changed, it uses function to write data 
 void handleDoorState(void){
-  if(val){ //then door is closed
+  if(val){ //then door is open
     if (doorClosed==true)
     {
       writeData();
@@ -131,11 +134,11 @@ void handleDoorState(void){
   else{
     if (doorClosed==false)
     {
-      writeData();
+    writeData();
     doorClosed = true;
     }
   }
-  digitalWrite(LED_BUILTIN, val); 
+  //digitalWrite(LED_BUILTIN, val); 
 }
 
 void writeHourlyState(void){
@@ -156,7 +159,6 @@ void writeHourlyState(void){
     Serial.println("writeState was not possible!");
   }
   myFile.close();
-
 }
 
 void checkHourlyState(void){
@@ -172,7 +174,7 @@ void checkHourlyState(void){
 // the setup function runs once when you press reset or power the board
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
+  // pinMode(LED_BUILTIN, OUTPUT); this is also sck?
 
   pinMode(SwitchDigital, INPUT_PULLUP);
   while (!Serial); // for Leonardo/Micro/Zero
@@ -181,9 +183,7 @@ void setup() {
     Serial.println("Couldn't find RTC");
     while (1);
   }
-  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); #use this if you want to sync time with pc
-
-
+  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__))); //use this if you want to sync time with pc
   Serial.print("Initializing SD card...");
   pinMode(SS, OUTPUT);
   if (!SD.begin(SDchipSelect)) {
