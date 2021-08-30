@@ -40,8 +40,18 @@ void writeDate(void){
   myFile.print(now.second(), DEC);
   myFile.print(",");
 }
-
 void printDate(void){
+  DateTime now = rtc.now();
+  char dateBuffer[12];
+
+  sprintf(dateBuffer,"%02u-%02u-%04u ",now.day(),now.month(),now.year());
+  myFile.print(dateBuffer);
+
+  sprintf(dateBuffer,"%02u:%02u:%02u ",now.hour(),now.minute(),now.second());
+  myFile.println(dateBuffer);
+}
+
+void printDateOld(void){
   DateTime now = rtc.now();
 
   Serial.print(now.year(), DEC);
@@ -132,7 +142,13 @@ void writeHourlyState(void){
   myFile = SD.open("test2.txt", FILE_WRITE);
   if (myFile) {
     writeDate();
-    myFile.println(",,Device is active.");
+    myFile.print(",,Device is still active, current state is ");
+    if(doorClosed){
+      myFile.println("closed");
+    }
+    else{
+      myFile.println("open");
+    }
     myFile.close();
     Serial.println("Device still active after 1 hour.");
   }
@@ -187,7 +203,6 @@ void setup() {
 // the loop function runs over and over again forever
 void loop() {
   checkHourlyState();
-  Serial.println("new cycle");
   val = digitalRead(SwitchDigital);
   handleDoorState();
   delay(500); 
