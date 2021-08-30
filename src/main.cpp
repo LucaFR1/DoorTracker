@@ -177,8 +177,9 @@ void setup() {
   // pinMode(LED_BUILTIN, OUTPUT); this is also sck?
 
   pinMode(SwitchDigital, INPUT_PULLUP);
-  while (!Serial); // for Leonardo/Micro/Zero
+  //while (!Serial); // for Leonardo/Micro/Zero
   Serial.begin(9600);
+  delay(1000);
   if (! rtc.begin()) {
     Serial.println("Couldn't find RTC");
     while (1);
