@@ -90,7 +90,7 @@ void printDateOld(void){
 
 
 void writeStart(void){
-  myFile = SD.open("test2.txt", FILE_WRITE);
+  myFile = SD.open("20210901.txt", FILE_WRITE);
   if (myFile) {
     writeDate();
     myFile.println("Device was started");
@@ -106,7 +106,7 @@ void writeStart(void){
 
 
 void writeData(void){
-  myFile = SD.open("test2.txt", FILE_WRITE);
+  myFile = SD.open("20210901.txt", FILE_WRITE);
   writeDate();
   if(doorClosed){
     myFile.println("door was closed, now open");
@@ -142,7 +142,7 @@ void handleDoorState(void){
 }
 
 void writeHourlyState(void){
-  myFile = SD.open("test2.txt", FILE_WRITE);
+  myFile = SD.open("20210901.txt", FILE_WRITE);
   if (myFile) {
     writeDate();
     myFile.print(",,Device is still active, current state is ");
