@@ -16,6 +16,7 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 //#include "ArduinoLowPower.h"
 
 #define SwitchDigital 7
+#define LEDControl 8
 bool doorClosed;
 float val; // digital input, high when door is open
 int lastHour = 0;
@@ -138,7 +139,7 @@ void handleDoorState(void){
     doorClosed = true;
     }
   }
-  //digitalWrite(LED_BUILTIN, val); 
+  digitalWrite(LEDControl, val); 
 }
 
 void writeHourlyState(void){
@@ -177,6 +178,7 @@ void setup() {
   // pinMode(LED_BUILTIN, OUTPUT); this is also sck?
 
   pinMode(SwitchDigital, INPUT_PULLUP);
+  pinMode(LEDControl, OUTPUT);
   //while (!Serial); // for Leonardo/Micro/Zero
   Serial.begin(9600);
   delay(1000);
